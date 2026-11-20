@@ -133,6 +133,8 @@ input[type=number]{font:inherit;color:#e4e9ff;background:#0c0e13;border:1px soli
 #rt svg{width:22px;height:22px}
 #tm{padding-left:calc(env(safe-area-inset-left,0px) + 156px)}
 #bQuick{font-size:20px;letter-spacing:2px}
+/* Desktop: place quick actions immediately after the time/playback controls. Mobile keeps its original right-side toolbar. */
+@media(min-width:701px){#rt{left:480px;right:auto;top:auto;bottom:calc(env(safe-area-inset-bottom,0px) + 7px);}}
 @media(max-width:700px){#tm{gap:4px;padding-right:6px}#tm span{min-width:46px;font-size:11px}}
 
 #bg{background-color:#03040a;background-repeat:no-repeat;background-size:cover;background-position:center;filter:saturate(1.12) brightness(.72)}
