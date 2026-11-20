@@ -152,6 +152,7 @@ if(!window.THREE){document.body.insertAdjacentHTML('beforeend','<p style="paddin
 const G=4*Math.PI*Math.PI,S=12,$=id=>document.getElementById(id),V3=THREE.Vector3;
 const E=(tag,cls,txt,fn)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;if(fn)e.onclick=fn;return e};
 const R=[['1 hr/s',1/8766],['1 day/s',1/365.25],['1 wk/s',7/365.25],['1 mo/s',1/12],['1 yr/s',1],['10 yr/s',10],['100 yr/s',100],['1000 yr/s',1000],['10K yr/s',1e4],['100K yr/s',1e5],['1M yr/s',1e6]];
+let orbitLineColor='#78aaff';try{orbitLineColor=localStorage.getItem('usb3-orbit-line-color')||orbitLineColor}catch(e){}
 let B=[],t=0,paused=false,ri=2,sel=null,tab='Details',tool='',coll=0,live=[],grid=null,done=new Set(),ev=null,qs=3e-4,opt={labels:1,grid:1,orbits:1,hz:0,gl:1,snd:1,gfx:2,coll:1,roche:1,therm:1,evo:1,gm:1,sq:1,mag:0};
 try{done=new Set(JSON.parse(localStorage.getItem('usb3-ach')||'[]'))}catch(e){}
 const toast=s=>{const e=$('toast');e.textContent=s;e.style.opacity=1;clearTimeout(toast.h);toast.h=setTimeout(()=>e.style.opacity=0,2400)};
@@ -331,7 +332,7 @@ else if(b.t==='neb')neb(b,g);
 else pxBuild(b,g);
 extras(b,g);g.scale.setScalar(rad(b));sc.add(g);
 b.lb=E('div','lab',b.n);$('labs').append(b.lb);
-const ln=new THREE.Line(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(new Float32Array(129*3),3)),new THREE.LineBasicMaterial({color:b.t==='star'||b.t==='hole'?0xd9822b:new THREE.Color(b.c1).lerp(new THREE.Color(0xffffff),.3),transparent:true,opacity:.7}));ln.frustumCulled=false;b.ln=ln;sc.add(ln)}
+const ln=new THREE.Line(new THREE.BufferGeometry().setAttribute('position',new THREE.BufferAttribute(new Float32Array(129*3),3)),new THREE.LineBasicMaterial({color:b.orbitColor||orbitLineColor,transparent:true,opacity:.78}));ln.frustumCulled=false;b.ln=ln;sc.add(ln)}
 function drop(b){sc.remove(b.g);sc.remove(b.ln);b.lb.remove()}
 function del(b){drop(b);B.splice(B.indexOf(b),1);if(sel===b){sel=null;panel()}}
 function clearAll(){B.forEach(drop);B=[];sel=null;cam.f=null;panel()}
@@ -497,6 +498,12 @@ function modal(title,build){const m=$('mod'),box=E('div','box'),bd2=E('div'),hd=
 $('mod').onclick=e=>{if(e.target.id==='mod')close()};
 const row=(p,l,fn)=>{const r=E('div','row'),v=E('b');r.append(E('span','',l),v);p.append(r);live.push(()=>{const x=fn();v.textContent=x;v.style.color=/^0%/.test(x)?'#ff8080':''})};
 const atmRow=(b,p)=>{const r=E('div','row'),lb=E('span'),i=E('input'),val=()=>+(i.value/1000*5).toFixed(1),up=()=>{lb.textContent='Atmosphere '+val()+' '+b.n};i.type='range';i.min=0;i.max=1000;i.value=Math.round((b.atm==null?1:b.atm)/5*1000);i.oninput=()=>{b.atm=val();up();pxAtm(b)};r.append(lb);p.append(r,i);up()};
+function orbitColorF(b,p){
+const wrap=E('div','temp-card'),head=E('div','row'),label=E('span','','Orbital line colour'),picker=E('input'),reset=E('button','','Reset',()=>{delete b.orbitColor;picker.value=orbitLineColor;if(b.ln)b.ln.material.color.set(orbitLineColor);toast('Using default orbital colour')});
+picker.type='color';picker.value=b.orbitColor||orbitLineColor;picker.title="Choose orbital line colour";picker.style.cssText='width:58px;height:38px;padding:2px;background:#101319;border:1px solid #39404c;border-radius:8px';
+picker.oninput=()=>{b.orbitColor=picker.value;if(b.ln)b.ln.material.color.set(b.orbitColor)};
+head.append(label,picker);wrap.append(head,reset);p.append(E('div','sh','Orbit appearance'),wrap);
+}
 function tempF(b,p){const card=E('div','temp-card'),top=E('div','temp-top'),left=E('div'),tag=E('div','temp-tag','SURFACE TEMPERATURE'),kel=E('div','temp-k'),cel=E('div','temp-c'),track=E('div','temp-track'),pin=E('div','temp-pin'),scale=E('div','temp-scale'),state=E('div','temp-state');
 left.append(kel,cel);top.append(left,tag);track.append(pin);scale.append(E('span','','0 K'),E('span','','500 K'),E('span','','1,000 K+'));card.append(top,track,scale,state);p.append(card);
 const update=()=>{const T=env(b).T,C=T-273.15,position=Math.max(0,Math.min(100,T/1500*100));kel.textContent=T.toLocaleString()+' K';cel.textContent=(C>=0?'+':'')+C.toFixed(1)+' °C';pin.style.left=position+'%';state.textContent=T<180?'Extremely cold':T<245?'Frozen surface conditions':T<330?'Temperate temperature range':T<700?'Hot surface conditions':'Extremely hot surface conditions'};
@@ -510,7 +517,7 @@ sli=(l,v,lo,hi,fm,set,ch)=>{const r=E('div','row'),o=E('b'),i=E('input');o.textC
 lg=(l,v,lo,hi,fm,set)=>sli(l,Math.log10(v),Math.log10(lo),Math.log10(hi),x=>fm(Math.pow(10,x)),x=>set(Math.pow(10,x))),
 pl=['earth','rock','gas','ice'].includes(b.t),sr=b.t==='star',U=sr?[1.1,6.957e8,'R\u2609']:[.15,6.371e6,'R\u2295'],ME=1/333000;
 if(tab==='Edit'){
-if(pl)tempF(b,p);
+if(pl){orbitColorF(b,p);tempF(b,p);}
 if(pl||sr)atmF(b,p);if(pl){gasF(b,p);
 if(b.t==='earth'||b.t==='rock')waterF(b,p);lookF(b,p)}
 if(b.t!=='neb'){p.append(E('div','sh','Physical properties'));
@@ -665,7 +672,7 @@ function settings(tb){if(typeof tb==='string')stab=tb;modal('Settings',p=>{const
 const sr=(l,get,tap)=>{const b=E('button','l sr'),v=E('b');b.append(E('span','',l),v);const u=()=>v.textContent=get();u();b.onclick=()=>{tap();u()};body.append(b)},
 on=k=>()=>opt[k]?'On':'Off',tg=k=>()=>{opt[k]=opt[k]?0:1},
 sl=(l,k,lo,hi,st,fm)=>{const r=E('div','row'),v=E('b'),i=E('input');r.append(E('span','',l),v);i.type='range';i.min=lo;i.max=hi;i.step=st;i.value=opt[k];v.textContent=fm(opt[k]);i.oninput=()=>{opt[k]=+i.value;v.textContent=fm(opt[k])};body.append(r,i)};
-if(stab==='General'){sr('Sound',on('snd'),tg('snd'));sr('Graphics',()=>['Low','Medium','High'][opt.gfx]+' \u203a',()=>{opt.gfx=(opt.gfx+1)%3;gfx()});sr('Object labels',()=>['None','Important','All'][opt.labels]+' \u203a',()=>{opt.labels=(opt.labels+1)%3});sr('Trajectories',()=>(opt.orbits?'Orbits':'Off')+' \u203a',tg('orbits'));sr('Grid',on('grid'),()=>{opt.grid=opt.grid?0:1;if(grid)grid.visible=!!opt.grid});sr('Gravity Lines',on('gl'),tg('gl'))}
+if(stab==='General'){sr('Sound',on('snd'),tg('snd'));sr('Graphics',()=>['Low','Medium','High'][opt.gfx]+' \u203a',()=>{opt.gfx=(opt.gfx+1)%3;gfx()});sr('Object labels',()=>['None','Important','All'][opt.labels]+' \u203a',()=>{opt.labels=(opt.labels+1)%3});sr('Trajectories',()=>(opt.orbits?'Orbits':'Off')+' \u203a',tg('orbits'));const cr=E('div','row'),cl=E('span','','Orbital line colour'),ci=E('input');ci.type='color';ci.value=orbitLineColor;ci.title='Choose orbital line colour';ci.style.cssText='width:58px;height:34px;padding:2px;background:#151923;border:1px solid #39445a;border-radius:8px';ci.oninput=()=>{orbitLineColor=ci.value;B.forEach(o=>{if(o.ln)o.ln.material.color.set(orbitLineColor)});try{localStorage.setItem('usb3-orbit-line-color',orbitLineColor)}catch(e){}};cr.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px';cr.append(cl,ci);body.append(cr);sr('Grid',on('grid'),()=>{opt.grid=opt.grid?0:1;if(grid)grid.visible=!!opt.grid});sr('Gravity Lines',on('gl'),tg('gl'))}
 else if(stab==='Physics'){sr('Collisions',on('coll'),tg('coll'));sr('Roche Limit',on('roche'),tg('roche'));sl('Gravity Multiplier','gm',0,3,.1,x=>x.toFixed(1)+'\u00d7');sl('Simulation Quality','sq',.5,2,.5,x=>x.toFixed(1)+'\u00d7');body.append(E('div','row','Higher = more accurate orbits at high time speeds, lower FPS'));sr('Thermal Dynamics',on('therm'),tg('therm'));sr('Stellar Evolution',on('evo'),tg('evo'))}
 else HELP.forEach(t=>body.append(E('div','row',t)))})}
 function help(){settings('Help')}
