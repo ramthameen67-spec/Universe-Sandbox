@@ -31,6 +31,11 @@ button.l{display:block;width:100%;margin-bottom:8px}
 .row{display:flex;justify-content:space-between;padding:9px 2px;gap:10px}.row b{font-weight:400;color:#8fa0cc;text-align:right}
 input{width:100%}
 input[type=text]{font:inherit;color:#e4e9ff;background:#0a1030;border:1px solid #2f3f6b;border-radius:12px;padding:12px;margin-bottom:8px;user-select:text}
+.tool-section-title{font-size:12px;letter-spacing:.09em;text-transform:uppercase;color:#8fa0cc;margin:4px 2px 8px}
+.tool-toggle{display:grid;grid-template-columns:22px minmax(0,1fr);align-items:center;justify-content:start;gap:12px;width:100%;min-height:48px;padding:10px 12px;margin:0 0 8px;background:#1b2234;border:1px solid #303b54;border-radius:10px;box-sizing:border-box;cursor:pointer}
+.tool-toggle input[type=checkbox]{width:18px;height:18px;margin:0;accent-color:#8fbaff;justify-self:center}
+.tool-toggle span{display:block;text-align:left;line-height:1.25;font-size:15px}
+.tool-action{width:100%;text-align:left;margin-top:4px}
 #toast{position:fixed;left:50%;top:14px;transform:translateX(-50%);padding:10px 16px;opacity:0;transition:opacity .3s;pointer-events:none}
 .box.w{width:min(860px,calc(100vw - 24px))}
 .cg{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px}
@@ -1430,12 +1435,19 @@ function universeHub(){
  });
 }
 $('bQuick').onclick=()=>modal('Tools',p=>{
- const addToggle=(label,active,fn)=>{const r=E('div','row'),c=E('input'),l=E('span','',label);c.type='checkbox';c.checked=!!active;c.onchange=()=>{fn(c.checked);toast(label+(c.checked?' on':' off'))};r.style.cssText='display:flex;align-items:center;gap:12px;padding:12px';r.append(c,l);p.append(r)};
- addToggle('Space goggles',opt.goggles, v=>{opt.goggles=v});
+ const addToggle=(label,active,fn)=>{
+  const r=E('label','tool-toggle'),c=E('input'),l=E('span','',label);
+  c.type='checkbox';c.checked=!!active;c.onchange=()=>{fn(c.checked);toast(label+(c.checked?' on':' off'))};
+  r.append(c,l);p.append(r);
+ };
+ const visualHead=E('div','tool-section-title','Visual options');p.append(visualHead);
+ addToggle('Space goggles',opt.goggles,v=>{opt.goggles=v});
  addToggle('Habitable zones',opt.hz||B.some(b=>b.t==='star'&&b.hzShow),v=>{opt.hz=v?1:0;B.filter(b=>b.t==='star').forEach(b=>b.hzShow=v);hzUpd()});
+ addToggle('Magnetic fields',!!opt.mag,v=>{opt.mag=v?1:0});
  addToggle('See-through atmosphere',opt.seeAtmosphere,v=>{opt.seeAtmosphere=v;B.forEach(atmUp)});
+ const starBtn=E('button','tool-action','Habitable zones by star',()=>habitableMenu());p.append(starBtn);
 });
-$('bMenu').onclick=()=>modal('Menu',p=>{const g=E('div','g2');p.append(g);[['Universe features',universeHub],['Settings',settings],['Help',help],['Habitable zones by star',habitableMenu],[(opt.hz?'Hide':'Show')+' all habitable zones',hzT],[(opt.mag?'Hide':'Show')+' magnetic fields',()=>{opt.mag=opt.mag?0:1;close();toast(opt.mag?'Magnetic fields on':'Magnetic fields hidden (selected planet still shows its own)')}],['Laser',()=>{tool=tool==='laser'?'':'laser';close();toast(tool?'Laser on: tap an object to remove it':'Laser off')}],['Move bodies',()=>{tool=tool==='move'?'':'move';close();toast(tool?'Move on: drag an object':'Move off')}],['Achievements',achs],['Save',saveM],['Load system',scenes],['Apex AI',aiM],['Clear system',()=>{ev=null;clearAll();close();ui();toast('System cleared')}],['All objects',objList],['Background',bgM]].forEach(([k,f])=>g.append(E('button',k==='Clear system'?'red':'',k,f)))});
+$('bMenu').onclick=()=>modal('Menu',p=>{const g=E('div','g2');p.append(g);[['Universe features',universeHub],['Settings',settings],['Help',help],['Laser',()=>{tool=tool==='laser'?'':'laser';close();toast(tool?'Laser on: tap an object to remove it':'Laser off')}],['Move bodies',()=>{tool=tool==='move'?'':'move';close();toast(tool?'Move on: drag an object':'Move off')}],['Achievements',achs],['Save',saveM],['Load system',scenes],['Apex AI',aiM],['Clear system',()=>{ev=null;clearAll();close();ui();toast('System cleared')}],['All objects',objList],['Background',bgM]].forEach(([k,f])=>g.append(E('button',k==='Clear system'?'red':'',k,f)))});
 
 const GL=new THREE.LineSegments(new THREE.BufferGeometry(),new THREE.LineBasicMaterial({color:0x2fbf71,transparent:true,opacity:.45,depthWrite:false})),GA=new Float32Array(600),accL=E('div','lab');
 GL.geometry.setAttribute('position',new THREE.BufferAttribute(GA,3));GL.frustumCulled=false;sc.add(GL);accL.style.cssText='color:#ffb86b;pointer-events:none;display:none';document.body.append(accL);
